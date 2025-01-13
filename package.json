@@ -1,0 +1,25 @@
+{
+  "name": "consent-decode-venv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aternus/csv-to-xlsx": "^2.1.2",
+    "@iabtechlabtcf/core": "^1.5.10",
+    "canvas": "^2.11.2",
+    "csv-parser": "^3.0.0",
+    "fs": "^0.0.1-security",
+    "json2csv": "^6.0.0-alpha.2",
+    "lodash": "^4.17.21",
+    "mongodb": "^6.8.0",
+    "xlsx": "^0.18.5"
+  }
+}
