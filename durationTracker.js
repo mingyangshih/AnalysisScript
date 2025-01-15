@@ -1,10 +1,9 @@
 const fs = require("fs");
-const xlsx = require("xlsx");
 let _ = require("lodash");
 let countryGroup = require("./countryGroup");
 let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let report = "./FG_duration_12-24.csv";
+let report = "./hiddenobjectgames.com_Duration_01_13.csv";
 let reportResult = [];
 
 let durationAccu = {};

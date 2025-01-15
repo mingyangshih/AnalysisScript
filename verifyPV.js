@@ -4,7 +4,7 @@ let _ = require("lodash");
 let countryGroup = require("./countryGroup");
 let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let pageviews = "./action_pageview_12-24_12-29.csv";
+let pageviews = "./hiddenobjectgames.com_pageview_01_13.csv";
 const PVResults = [];
 let pageView = {};
 let pageViewGroup = {};
@@ -97,18 +97,18 @@ fs.createReadStream(pageviews)
       });
     });
     // show browser width distribution
-    // Object.keys(browserDis).forEach((variant) => {
-    //   Object.keys(browserDis[variant]).forEach((group) => {
-    //     console.log(
-    //       `Browser Distribution Percentage: Case${variant} ${
-    //         browserDis[variant][group]
-    //       } ${group} ${(
-    //         (browserDis[variant][group] / pageView[variant]) *
-    //         100
-    //       ).toFixed(2)}%`
-    //     );
-    //   });
-    // });
+    Object.keys(browserDis).forEach((variant) => {
+      Object.keys(browserDis[variant]).forEach((group) => {
+        console.log(
+          `Browser Distribution Percentage: Case${variant} ${
+            browserDis[variant][group]
+          } ${group} ${(
+            (browserDis[variant][group] / pageView[variant]) *
+            100
+          ).toFixed(2)}%`
+        );
+      });
+    });
     // console.log("uuidGroup", uuidGroup);
     // console.log("browserDis", browserDis);
     // Object.keys(browserDis).forEach((variant) => {
