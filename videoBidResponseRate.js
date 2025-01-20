@@ -1,54 +1,37 @@
 const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
-let bidResponse24 = "./video_bid_response24.csv";
-const bidResponse24Results = [];
+let file = "./classicgame.com_01_18.csv";
+let reportResult = [];
+let createObject = require("./Utils/createVariantObject");
+let { createVariantObject } = createObject;
 
-let bidRequest = {};
 let bidResponse = {};
-let totalCPM = {};
-let maxCPM = {};
-fs.createReadStream(bidResponse24)
+
+fs.createReadStream(file)
   .pipe(csv())
-  .on("data", (data) => bidResponse24Results.push(data)) //Domain
+  .on("data", (data) => reportResult.push(data)) //Domain
   .on("end", () => {
-    // cd1 : bidder
-    // cd2 : CPM
-    // label: 'desktop-outstream'
-    // action: 'bidRequested'
-    _.each(bidResponse24Results, (item) => {
-      if (item.label !== "desktop-outstream") {
-        return true;
+    _.each(reportResult, (item) => {
+      if (item.action !== "bidResponse") {
+        return;
       }
-      if (item.action === "bidRequested") {
-        if (!bidRequest[item.cd1]) {
-          bidRequest[item.cd1] = 1;
-        } else {
-          bidRequest[item.cd1] += 1;
-        }
-      }
-      if (item.action === "bidResponse") {
-        if (!bidResponse[item.cd1]) {
-          bidResponse[item.cd1] = 1;
-        } else {
-          bidResponse[item.cd1] += 1;
-        }
-        if (!totalCPM[item.cd1]) {
-          totalCPM[item.cd1] = +item.cd2;
-        } else {
-          totalCPM[item.cd1] += +item.cd2;
-        }
-        if (!maxCPM[item.cd1]) {
-          maxCPM[item.cd1] = +item.cd2;
-        } else {
-          if (maxCPM[item.cd1] < item.cd2) {
-            maxCPM[item.cd1] = +item.cd2;
-          }
-        }
+      console.log(item.action);
+      // let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
+      //   timeZone: "America/New_York",
+      //   year: "numeric",
+      //   month: "numeric",
+      //   day: "numeric",
+      // });
+      // if (day !== "1/18/2025") {
+      //   console.log(day);
+      // }
+      createVariantObject(bidResponse, item.cd3, {});
+      if (!bidResponse[item.cd3][item.label]) {
+        bidResponse[item.cd3][item.label] = 1;
+      } else {
+        bidResponse[item.cd3][item.label] += 1;
       }
     });
-    console.log("bidRequest", bidRequest);
-    console.log("bidResponse", bidResponse);
-    console.log("totalCPM", totalCPM);
-    console.log("maxCPM", maxCPM);
+    console.log(bidResponse);
   });
