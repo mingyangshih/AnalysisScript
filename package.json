@@ -19,6 +19,7 @@
     "fs": "^0.0.1-security",
     "json2csv": "^6.0.0-alpha.2",
     "lodash": "^4.17.21",
+    "markdown-js": "^0.0.4",
     "mongodb": "^6.8.0",
     "xlsx": "^0.18.5"
   }

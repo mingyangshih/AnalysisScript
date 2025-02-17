@@ -4,7 +4,7 @@ let _ = require("lodash");
 let countryGroup = require("./countryGroup");
 let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let pageviews = "./classicgame.com_01_18_pv.csv";
+let pageviews = "./hiddenobjectgames.com_01_20_PV.csv";
 const PVResults = [];
 let pageView = {};
 let pageViewGroup = {};
@@ -74,7 +74,9 @@ fs.createReadStream(pageviews)
       `${pageviews} ==============================================================`
     );
     console.log("pageView", pageView);
-    console.log("pageViewGroup", pageViewGroup);
+    console.log("pageViewGroup");
+    console.table(pageViewGroup);
+    console.table(browserDis);
     // Show the pageview distribution by group
     Object.keys(pageViewGroup).forEach((variant) => {
       Object.keys(pageViewGroup[variant]).forEach((group) => {

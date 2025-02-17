@@ -1,7 +1,7 @@
 const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
-let file = "./classicgame.com_01_18.csv";
+let file = "./hiddenobjectgames.com_01_20_medrec.csv";
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
 let reportResult = [];
@@ -18,16 +18,19 @@ fs.createReadStream(file)
       if (item.action !== "slotRenderEnded") {
         return;
       }
-      console.log(item.action);
-      //   let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
-      //     timeZone: "America/New_York",
-      //     year: "numeric",
-      //     month: "numeric",
-      //     day: "numeric",
-      //   });
-      //   if (day !== "1/18/2025") {
-      //     console.log(day);
-      //   }
+      if (item.pagepath.indexOf("/game/") < 0) {
+        return;
+      }
+      // console.log(item.action);
+      let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      });
+      if (day !== "1/20/2025") {
+        console.log(day);
+      }
 
       createVariantObject(slotRenderCount, item.cd3, 0);
       createVariantObject(slotRenderEnded, item.cd3, {});
@@ -46,12 +49,13 @@ fs.createReadStream(file)
         slotStatus[item.cd3][item.cd26] += 1;
       }
     });
-    console.log(slotRenderEnded);
-    Object.keys(slotRenderCount).forEach((variant) => {
-      console.log(
-        `${variant} Avg. CPM: ${
-          slotRenderEndedCPM[variant] / slotRenderCount[variant]
-        }`
-      );
-    });
+    console.table(slotRenderEnded);
+    console.table(slotStatus);
+    // Object.keys(slotRenderCount).forEach((variant) => {
+    //   console.log(
+    //     `${variant} Avg. CPM: ${
+    //       slotRenderEndedCPM[variant] / slotRenderCount[variant]
+    //     }`
+    //   );
+    // });
   });

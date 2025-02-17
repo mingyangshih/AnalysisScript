@@ -4,7 +4,7 @@ let _ = require("lodash");
 let countryGroup = require("./countryGroup");
 let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let onVideoStarated = "./classicgame.com_01_18.csv";
+let file = "./hiddenobjectgames.com_01_20-01_22_outstream.csv";
 
 let datas = [];
 let caseOutstream = {};
@@ -17,9 +17,13 @@ function createVariantObject(object, variant, defaultValue) {
     object[variant] = defaultValue;
   }
 }
-fs.createReadStream(onVideoStarated)
+fs.createReadStream(file)
   .pipe(csv())
-  .on("data", (data) => datas.push(data))
+  .on("data", (data) => {
+    if (data.action == "onVideoStarted") {
+      datas.push(data);
+    }
+  })
   .on("end", () => {
     let sorted = _.sortBy(datas, ["cd3"]);
     _.forEach(sorted, (item) => {
@@ -29,16 +33,19 @@ fs.createReadStream(onVideoStarated)
       if (item.label.indexOf("outstream") === -1) {
         return;
       }
-      console.log(item.label);
-      let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
-        timeZone: "America/New_York",
-        year: "numeric",
-        month: "numeric",
-        day: "numeric",
-      });
-      if (day !== "1/18/2025") {
-        console.log(day);
+      if (item.pagepath.indexOf("/game/") < 0) {
+        return;
       }
+      console.log(item.action);
+      // let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
+      //   timeZone: "America/New_York",
+      //   year: "numeric",
+      //   month: "numeric",
+      //   day: "numeric",
+      // });
+      // if (day !== "1/21/2025") {
+      //   console.log(day);
+      // }
       let countryGroup = "OTHERS";
       let { country } = item;
       if (COUNTRY_GROUP_1.indexOf(country) > -1) {
