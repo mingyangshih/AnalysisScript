@@ -4,8 +4,7 @@ let _ = require("lodash");
 let countryGroup = require("./countryGroup");
 let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let file = "./hiddenobjectgames.com_01_20-01_22_outstream.csv";
-
+let file = "./FG/FG_03-19_case4_12_outstream.csv";
 let datas = [];
 let caseOutstream = {};
 let caseOutstreamGroup = {};
@@ -20,7 +19,10 @@ function createVariantObject(object, variant, defaultValue) {
 fs.createReadStream(file)
   .pipe(csv())
   .on("data", (data) => {
-    if (data.action == "onVideoStarted") {
+    if (
+      data.action == "onVideoStarted" &&
+      data.label.indexOf("outstream") > -1
+    ) {
       datas.push(data);
     }
   })
@@ -33,19 +35,21 @@ fs.createReadStream(file)
       if (item.label.indexOf("outstream") === -1) {
         return;
       }
-      if (item.pagepath.indexOf("/game/") < 0) {
-        return;
-      }
-      console.log(item.action);
+      // if (item.pagepath.indexOf("/game/") < 0) {
+      //   return;
+      // }
+
       // let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
       //   timeZone: "America/New_York",
       //   year: "numeric",
       //   month: "numeric",
       //   day: "numeric",
       // });
-      // if (day !== "1/21/2025") {
-      //   console.log(day);
+      // if (day !== "3/9/2025") {
+      // console.log(day);
+      // return;
       // }
+
       let countryGroup = "OTHERS";
       let { country } = item;
       if (COUNTRY_GROUP_1.indexOf(country) > -1) {
@@ -57,10 +61,19 @@ fs.createReadStream(file)
       createVariantObject(caseBidderGroup, item.cd3, {});
       createVariantObject(caseOutstreamGroup, item.cd3, {});
       createVariantObject(caseMaxCPM, `Case${item.cd3}`, 0);
+      // createVariantObject(caseOutstreamCPM, `Case${item.cd3}`, {
+      //   CPM: 0,
+      //   "Outstream Revenue": 0,
+      // });
       createVariantObject(caseOutstreamCPM, `Case${item.cd3}`, 0);
       createVariantObject(caseOutstream, `Case${item.cd3}`, 0);
+      // if (item.cd5 === "Outstream_HYB") {
       caseOutstream[`Case${item.cd3}`] += 1;
+      // }
+
       caseOutstreamCPM[`Case${item.cd3}`] += +item.cd2;
+      // caseOutstreamCPM[`Case${item.cd3}`]["Outstream Revenue"] =
+      //   caseOutstreamCPM[`Case${item.cd3}`]["CPM"] / 1000;
       if (item.cm5 > caseMaxCPM[`Case${item.cd3}`]) {
         caseMaxCPM[`Case${item.cd3}`] = item.cd2;
       }
@@ -77,18 +90,8 @@ fs.createReadStream(file)
       }
     });
 
-    console.log(
-      "caseOutstream",
-      caseOutstream,
-      // "caseOutstreamGroup",
-      // caseOutstreamGroup
-      // "caseOutstreamCPM",
-      // caseOutstreamCPM,
-      // "caseBidderGroup",
-      // caseBidderGroup,
-      "caseMaxCPM",
-      caseMaxCPM
-    );
+    console.table(caseOutstream);
+    console.table(caseOutstreamCPM);
     Object.keys(caseOutstream).forEach((variant) => {
       console.log(
         `${variant} Avg. CPM: ${

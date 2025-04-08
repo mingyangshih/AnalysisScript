@@ -1,7 +1,7 @@
 const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
-let file = "./hidden/hiddenobjectgames.com_01-21_02-03_beforeSlotRequest.csv";
+let file = "./FG/FG_[03-18]_case4_beforeSlotRequest.csv";
 let reportResult = [];
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
@@ -44,28 +44,30 @@ fs.createReadStream(file)
       //   month: "numeric",
       //   day: "numeric",
       // });
-      // if (day !== "1/21/2025") {
-      //   console.log(day);
+      // if (day !== "3/9/2025") {
+      // console.log(day);
+      // return;
       // }
 
-      if (item.pagepath.indexOf("/game/") < 0) {
-        return;
-      }
+      // if (item.pagepath.indexOf("/game/") < 0) {
+      //   return;
+      // }
 
       createVariantObject(beforeSlotRequest, item.cd3, {});
-      createVariantObject(cd36, item.cd3, {});
+      // createVariantObject(cd36, item.cd3, {});
       if (!beforeSlotRequest[item.cd3][item.label]) {
         beforeSlotRequest[item.cd3][item.label] = 1;
       } else {
         beforeSlotRequest[item.cd3][item.label] += 1;
       }
-      if (!cd36[item.cd3][item.cd36]) {
-        cd36[item.cd3][item.cd36] = 1;
-      } else {
-        cd36[item.cd3][item.cd36] += 1;
-      }
+      // if (!cd36[item.cd3][item.cd36]) {
+      //   cd36[item.cd3][item.cd36] = 1;
+      // } else {
+      //   cd36[item.cd3][item.cd36] += 1;
+      // }
     });
+    console.log(file);
     console.table(beforeSlotRequest);
-    console.table(cd36);
-    console.table(secondRequest);
+    // console.table(cd36);
+    // console.table(secondRequest);
   });

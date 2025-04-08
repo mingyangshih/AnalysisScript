@@ -3,20 +3,19 @@ var _ = require("lodash");
 const xlsx = require("xlsx");
 const csv = require("csv-parser");
 // let file = "./hidden/hiddenobjectgames.com_02-03_outstream.csv";
-let file = "./hidden/hiddenobjectgames.com_01-21_outstream.csv";
+let file = "./FG/FG_03-19_case1_12_outstream.csv";
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
 let reportResult = [];
 let bidRequestTimes = {};
-let gapTime = {};
-let browserDis = {};
+let total = {};
 let cd36 = {};
 fs.createReadStream(file)
   .pipe(csv())
   .on("data", (data) => {
     if (
       data.action == "bidRequested" &&
-      data.pagepath.indexOf("/game/") > -1
+      data.label.indexOf("outstream") > -1
       // data.cd1 === "pulsepoint_v"
     ) {
       reportResult.push(data);
@@ -28,12 +27,20 @@ fs.createReadStream(file)
       if (item.action !== "bidRequested") {
         return;
       }
-      if (item.pagepath.indexOf("/game/") < 0) {
+      let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      });
+      if (day !== "3/19/2025") {
+        console.log(day);
         return;
       }
-
+      createVariantObject(total, `${item.cd3}`, 0);
       createVariantObject(bidRequestTimes, `${item.cd3}`, {});
       createVariantObject(cd36, `${item.cd3}`, {});
+      total[`${item.cd3}`] += 1;
       if (!bidRequestTimes[`${item.cd3}`][item.label]) {
         bidRequestTimes[`${item.cd3}`][item.label] = 1;
       } else {
@@ -71,28 +78,6 @@ fs.createReadStream(file)
     });
     console.log("bidRequestTimes");
     console.log(file);
-    // console.log(bidRequestTimes);
+    console.table(total);
     console.table(bidRequestTimes);
-    // console.log(cd36);
-    // console.table(gapTime);
-    // console.table(browserDis);
-    // let output = [];
-    // Object.keys(bidRequestTimes).forEach((i) => {
-    //   output.push(bidRequestTimes[i]);
-    // });
-    // const bidRequested = xlsx.utils.json_to_sheet(output);
-
-    // const bidRequested_book = xlsx.utils.book_new();
-    // xlsx.utils.book_append_sheet(bidRequested_book, bidRequested, "After Cal");
-
-    // xlsx.writeFile(bidRequested_book, "./hidden_bidRequested.xlsx");
-    // Object.keys(bidRequestTimes).forEach((variant) => {
-    //   Object.keys(bidRequestTimes[variant]).forEach((bidder) => {
-    //     console.log(
-    //       `${variant} ${bidder} Avg. Gap: ${
-    //         gapTime[variant][bidder] / 1000 / bidRequestTimes[variant][bidder]
-    //       }`
-    //     );
-    //   });
-    // });
   });
