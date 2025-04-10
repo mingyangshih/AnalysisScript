@@ -1,7 +1,7 @@
 const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
-let file = "./iwin/iwin_0301_one_user.csv";
+let file = "./iwin/iwin_03-31_Yolla.csv";
 let reportResult = [];
 
 fs.createReadStream(file)
@@ -14,11 +14,7 @@ fs.createReadStream(file)
     const { game, nonGame } = _.groupBy(reportResult, (item) =>
       item.pagepath.includes("/online-games/game/play/") ? "game" : "nonGame"
     );
-    console.log(
-      _.groupBy(reportResult, (item) =>
-        item.pagepath.includes("/online-games/game/play/") ? "game" : "nonGame"
-      )["nonGame"]
-    );
+
     // First get non-game revenue by user (simplified)
     let nonGameUserRevenue = _.chain(nonGame)
       .groupBy("uuid")
@@ -104,7 +100,7 @@ fs.createReadStream(file)
       .groupBy("pagepath")
       .map((users, pagepath) => ({
         pagepath,
-        uniqueUsers: users.length,
+        totalUniqueUsers: users.length,
         totalEvents: _.sumBy(users, "eventCount"),
         avgTimeSpent:
           Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
@@ -122,12 +118,12 @@ fs.createReadStream(file)
     // Save game pages report
     const gameCsvOutput = gameRevenueReport.map(
       (stat) =>
-        `${stat.pagepath},${stat.uniqueUsers},${stat.totalEvents},${stat.avgTimeSpent},` +
+        `${stat.pagepath},${stat.totalUniqueUsers},${stat.totalEvents},${stat.avgTimeSpent},` +
         `${stat.revenue_1min},${stat.revenue_5min},${stat.revenue_10min},${stat.revenue_20min},` +
         `${stat.revenue_30min},${stat.revenue_40min},${stat.revenue_50min},${stat.revenue_60min}`
     );
     gameCsvOutput.unshift(
-      "pagepath,uniqueUsers,totalEvents,avgTimeSpent," +
+      "pagepath,totalUniqueUsers,totalEvents,avgTimeSpent," +
         "revenue_1min,revenue_5min,revenue_10min,revenue_20min," +
         "revenue_30min,revenue_40min,revenue_50min,revenue_60min"
     );
