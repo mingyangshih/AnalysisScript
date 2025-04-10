@@ -1,19 +1,20 @@
 const { MongoClient } = require("mongodb");
-const { Transform, Readable } = require("stream");
-const { Parser, parse } = require("json2csv");
-const fs = require("fs");
+const { processData } = require("./iwin");
+// const { Transform, Readable } = require("stream");
+// const { Parser, parse } = require("json2csv");
+// const fs = require("fs");
 var _ = require("lodash");
+const moment = require("moment");
 
 // MongoDB 連接 URL
-const url = "mongodb://35.94.152.36:27017"; // Performance Tracker
+const preformanceUrl = "mongodb://54.213.142.191:27017"; // Performance Tracker
 const debugUrl = "mongodb://54.189.105.156:27017"; //Debug Tracker
 const dbName = "data-collection";
-const domainId = 120;
+const domainId = 233;
 const collectionName = `pageview${domainId}`;
 
-async function exportData() {
-  // _.forEach(July_1_to_July_15, async (value, index) => {
-  const client = new MongoClient(debugUrl);
+async function exportData(startTs, endTs) {
+  const client = new MongoClient(preformanceUrl);
   try {
     await client.connect();
     console.log("Connected to MongoDB");
@@ -21,101 +22,91 @@ async function exportData() {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
 
-    // pv
-    const matchCondition = [
-      {
-        $match: {
-          ts: {
-            $gte: 1737435600000,
-            $lte: 1737522000000, // 1738040400000
-          },
-          label: "desktop-outstream",
-          // label: "desktop-medrec-template",
-          // category: {
-          //   $regex: "^Duration$",
-          // },
-          action: {
-            $regex:
-              // "^beforeSlotRequest$|^onVideoStarted$|bidResponse|slotRenderEnded|bidRequested",
-              // "^beforeSlotRequest$|bidResponse|slotRenderEnded|bidRequested",
-              "bidResponse|bidRequested",
-            // "pageview",
-          },
-          cd3: {
-            // $regex: "71|72|73|74|75|76", //card game
-            // $regex: "23|24|25|26|27|28", classic game
-            // $regex: "87|88|89|90|91|92", //action
-            $regex: "22|23|24|25|26|27|28", // hidden
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: `user_info${domainId}`,
-          as: "user",
-          localField: "user_info_id",
-          foreignField: "_id",
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: [
-              "$$ROOT",
-              {
-                $arrayElemAt: ["$user", 0],
-              },
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          label: "$label",
-          ts: "$ts",
-          category: "$category",
-          action: "$action",
-          value: "$value",
-          uuid: "$uuid",
-          sessionid: "$sessionid",
-          bs: "$bs",
-          pagepath: "$pagepath",
-          hostname: "$hostname",
-          country: "$country",
-          cd1: "$cd1",
-          cd2: "$cd2",
-          cd3: "$cd3",
-          cd4: "$cd4",
-          cd5: "$cd5",
-          cd6: "$cd6",
-          cd7: "$cd7",
-          cd26: "$cd26",
-          cd27: "$cd27",
-          cd33: "$cd33",
-          cd36: "$cd36",
-          cd38: "$cd38",
-          cm3: "$cm3",
-          cm5: "$cm5",
-          cm13: "$cm13",
-        },
-      },
-    ];
+    let allData = [];
 
-    // query data
-    const data = await collection.aggregate(matchCondition).toArray();
-    console.log(data.length);
+    // Create array of daily timestamps
+    const dates = [];
+    let currentTs = startTs;
+    while (currentTs <= endTs) {
+      dates.push(currentTs);
+      currentTs += 86400000; // Add one day in milliseconds
+    }
 
-    const json2csvParser = new Parser();
-    const csv = json2csvParser.parse(data);
-    // save file
-    fs.writeFileSync(`hidden/${data[0].cd7}_01-21_outstream.csv`, csv);
-    console.log(`Done: ${data[0].cd7}_01-21_outstream.csv`);
+    // Pull data day by day
+    for (const dayStart of dates) {
+      const dayEnd = dayStart + 86399999; // End of the day (23:59:59.999)
+
+      const matchCondition = [
+        {
+          $match: {
+            ts: {
+              $gte: dayStart,
+              $lte: dayEnd,
+            },
+            category: {
+              $regex: "^Yolla$",
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "user_info233",
+            as: "user",
+            localField: "user_info_id",
+            foreignField: "_id",
+          },
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                "$$ROOT",
+                {
+                  $arrayElemAt: ["$user", 0],
+                },
+              ],
+            },
+          },
+        },
+        {
+          $project: {
+            uuid: "$uuid",
+            sessionid: "$sessionid",
+            ts: "$ts",
+            value: "$value",
+            pagepath: "$pagepath",
+            cm12: "$cm12",
+            coutry: "$country",
+            devicecategory: "$devicecategory",
+          },
+        },
+      ];
+
+      console.log(
+        `Pulling data for ${moment(dayStart).format("YYYY-MM-DD")}...`
+      );
+      const dayData = await collection.aggregate(matchCondition).toArray();
+      console.log(`Found ${dayData.length} records`);
+
+      allData = allData.concat(dayData);
+    }
+
+    console.log(`Total records: ${allData.length}`);
+    processData(
+      allData,
+      `iwin_${moment(startTs).format("MM-DD")}_${moment(endTs).format(
+        "MM-DD"
+      )}_mongodb`
+    );
   } catch (err) {
     console.error("Error exporting data:", err);
   } finally {
     await client.close();
   }
-  // });
 }
 
-exportData();
+// Example usage for March 2025
+const startTs = 1740805200000; // 2025-03-01 00:00:00 UTC
+const endTs = 1743483600000; // 2025-03-31 23:59:59 UTC
+
+exportData(startTs, endTs);
