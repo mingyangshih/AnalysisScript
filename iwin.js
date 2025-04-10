@@ -24,10 +24,15 @@ function processData(reportResult, fileName = "test") {
 
   // Calculate unique users for each time bucket
   const pageUniqueUsers = _.chain(game)
-    .groupBy((item) => `${item.uuid}_${item.pagepath}`)
+    .groupBy(
+      (item) =>
+        `${item.uuid}_${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
     .map((events) => {
       const pagepath = events[0].pagepath;
       const uuid = events[0].uuid;
+      const country = events[0].country;
+      const devicecategory = events[0].devicecategory;
       let revenue = {
         "1min": 0,
         "5min": 0,
@@ -82,10 +87,14 @@ function processData(reportResult, fileName = "test") {
       return {
         uuid,
         pagepath,
+        country,
+        devicecategory,
         revenue,
       };
     })
-    .groupBy("pagepath")
+    .groupBy(
+      (item) => `${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
     .mapValues((users) => ({
       totalUniqueUsers: users.length,
       users_1min: _.filter(users, (u) => u.revenue["1min"] > 0).length,
@@ -101,10 +110,15 @@ function processData(reportResult, fileName = "test") {
 
   // Process game pages and add non-game revenue
   let gameRevenueReport = _.chain(game)
-    .groupBy((item) => `${item.uuid}_${item.pagepath}`)
+    .groupBy(
+      (item) =>
+        `${item.uuid}_${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
     .map((events) => {
       const pagepath = events[0].pagepath;
       const uuid = events[0].uuid;
+      const country = events[0].country;
+      const devicecategory = events[0].devicecategory;
       let revenue = {
         "1min": 0,
         "5min": 0,
@@ -167,34 +181,43 @@ function processData(reportResult, fileName = "test") {
       return {
         uuid,
         pagepath,
+        country,
+        devicecategory,
         timeSpentMinutes: Math.round(totalTimeSpentMinutes * 100) / 100,
         eventCount: events.length,
         revenue,
       };
     })
-    .groupBy("pagepath")
-    .map((users, pagepath) => ({
-      pagepath,
-      totalEvents: _.sumBy(users, "eventCount"),
-      avgTimeSpent: Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
-      // Add user counts from pageUniqueUsers
-      ...pageUniqueUsers[pagepath],
-      // Revenue
-      revenue_1min: _.sumBy(users, (u) => u.revenue["1min"]),
-      revenue_5min: _.sumBy(users, (u) => u.revenue["5min"]),
-      revenue_10min: _.sumBy(users, (u) => u.revenue["10min"]),
-      revenue_20min: _.sumBy(users, (u) => u.revenue["20min"]),
-      revenue_30min: _.sumBy(users, (u) => u.revenue["30min"]),
-      revenue_40min: _.sumBy(users, (u) => u.revenue["40min"]),
-      revenue_50min: _.sumBy(users, (u) => u.revenue["50min"]),
-      revenue_60min: _.sumBy(users, (u) => u.revenue["60min"]),
-    }))
+    .groupBy(
+      (item) => `${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
+    .map((users, key) => {
+      const [pagepath, country, devicecategory] = key.split("_");
+      return {
+        pagepath,
+        country,
+        devicecategory,
+        totalEvents: _.sumBy(users, "eventCount"),
+        avgTimeSpent:
+          Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
+        ...pageUniqueUsers[key],
+        revenue_1min: _.sumBy(users, (u) => u.revenue["1min"]),
+        revenue_5min: _.sumBy(users, (u) => u.revenue["5min"]),
+        revenue_10min: _.sumBy(users, (u) => u.revenue["10min"]),
+        revenue_20min: _.sumBy(users, (u) => u.revenue["20min"]),
+        revenue_30min: _.sumBy(users, (u) => u.revenue["30min"]),
+        revenue_40min: _.sumBy(users, (u) => u.revenue["40min"]),
+        revenue_50min: _.sumBy(users, (u) => u.revenue["50min"]),
+        revenue_60min: _.sumBy(users, (u) => u.revenue["60min"]),
+      };
+    })
     .value();
 
-  // Save game pages report
+  // Update CSV output format
   const gameCsvOutput = gameRevenueReport.map(
     (stat) =>
-      `${stat.pagepath},${stat.totalUniqueUsers},${stat.totalEvents},${stat.avgTimeSpent},` +
+      `${stat.pagepath},${stat.country},${stat.devicecategory},` +
+      `${stat.totalUniqueUsers},${stat.totalEvents},${stat.avgTimeSpent},` +
       // 1min
       `${stat.users_1min},${stat.revenue_1min},` +
       // 5min
@@ -214,7 +237,8 @@ function processData(reportResult, fileName = "test") {
   );
 
   gameCsvOutput.unshift(
-    "pagepath,totalUniqueUsers,totalEvents,avgTimeSpent," +
+    "pagepath,country,devicecategory," +
+      "totalUniqueUsers,totalEvents,avgTimeSpent," +
       "users_1min,revenue_1min," +
       "users_5min,revenue_5min," +
       "users_10min,revenue_10min," +
@@ -225,7 +249,10 @@ function processData(reportResult, fileName = "test") {
       "users_60min,revenue_60min"
   );
 
-  fs.writeFileSync(`./iwin/iwin_03-01_report.csv`, gameCsvOutput.join("\n"));
+  fs.writeFileSync(
+    `./iwin/iwin_03-01_report_country_device.csv`,
+    gameCsvOutput.join("\n")
+  );
 }
 
 fs.createReadStream(file)
