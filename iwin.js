@@ -108,6 +108,9 @@ function processData(reportResult, fileName = "test") {
     }))
     .value();
 
+  const TOTAL_VALUE = 23543946;
+  const DFP_REVENUE = 333.683;
+
   // Process game pages and add non-game revenue
   let gameRevenueReport = _.chain(game)
     .groupBy(
@@ -193,14 +196,8 @@ function processData(reportResult, fileName = "test") {
     )
     .map((users, key) => {
       const [pagepath, country, devicecategory] = key.split("_");
-      return {
-        pagepath,
-        country,
-        devicecategory,
-        totalEvents: _.sumBy(users, "eventCount"),
-        avgTimeSpent:
-          Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
-        ...pageUniqueUsers[key],
+      // 先計算原始的 revenue 值
+      const rawRevenues = {
         revenue_1min: _.sumBy(users, (u) => u.revenue["1min"]),
         revenue_5min: _.sumBy(users, (u) => u.revenue["5min"]),
         revenue_10min: _.sumBy(users, (u) => u.revenue["10min"]),
@@ -209,6 +206,41 @@ function processData(reportResult, fileName = "test") {
         revenue_40min: _.sumBy(users, (u) => u.revenue["40min"]),
         revenue_50min: _.sumBy(users, (u) => u.revenue["50min"]),
         revenue_60min: _.sumBy(users, (u) => u.revenue["60min"]),
+      };
+
+      return {
+        pagepath,
+        country,
+        devicecategory,
+        totalEvents: _.sumBy(users, "eventCount"),
+        avgTimeSpent:
+          Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
+        ...pageUniqueUsers[key],
+        // 對每個 revenue 值套用公式並保留兩位小數
+        revenue_1min: Number(
+          ((rawRevenues.revenue_1min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_5min: Number(
+          ((rawRevenues.revenue_5min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_10min: Number(
+          ((rawRevenues.revenue_10min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_20min: Number(
+          ((rawRevenues.revenue_20min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_30min: Number(
+          ((rawRevenues.revenue_30min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_40min: Number(
+          ((rawRevenues.revenue_40min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_50min: Number(
+          ((rawRevenues.revenue_50min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
+        revenue_60min: Number(
+          ((rawRevenues.revenue_60min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
+        ),
       };
     })
     .value();
@@ -250,7 +282,7 @@ function processData(reportResult, fileName = "test") {
   );
 
   fs.writeFileSync(
-    `./iwin/iwin_03-01_report_country_device.csv`,
+    `./iwin/iwin_03-01_report_country_device_revenue.csv`,
     gameCsvOutput.join("\n")
   );
 }
