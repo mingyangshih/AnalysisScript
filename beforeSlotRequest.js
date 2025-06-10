@@ -1,19 +1,23 @@
 const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
-let file = "./FG/FG_[03-18]_case4_beforeSlotRequest.csv";
+let file =
+  "./bubbleshooter.net/bubbleshooter.net_06-03_beforeSlotRequest_Case1_Case3.csv";
 let reportResult = [];
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
 
 let beforeSlotRequest = {};
 let cd36 = {};
-let secondRequest = {};
 
 fs.createReadStream(file)
   .pipe(csv())
   .on("data", (data) => {
-    if (data.action == "beforeSlotRequest") {
+    if (
+      data.action == "beforeSlotRequest" &&
+      data.label.indexOf("outstream") > -1 &&
+      data.cd3 === "3"
+    ) {
       reportResult.push(data);
     }
   }) //Domain
@@ -23,31 +27,18 @@ fs.createReadStream(file)
       if (item.action !== "beforeSlotRequest") {
         return;
       }
-      createVariantObject(secondRequest, item.cd3, {});
-      if (sorted[id - 1]) {
-        if (
-          sorted[id - 1].cd25 === sorted[id].cd25 &&
-          sorted[id - 1].uuid === sorted[id].uuid
-        ) {
-          if ((+sorted[id].ts - +sorted[id - 1].ts) / 1000 < 5) {
-            if (!secondRequest[item.cd3]["secondRequest"]) {
-              secondRequest[item.cd3]["secondRequest"] = 1;
-            } else {
-              secondRequest[item.cd3]["secondRequest"] += 1;
-            }
-          }
+      if (id === 0) {
+        let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
+          timeZone: "America/New_York",
+          year: "numeric",
+          month: "numeric",
+          day: "numeric",
+        });
+        if (day !== "6/3/2025") {
+          console.log(day);
+          return;
         }
       }
-      // let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
-      //   timeZone: "America/New_York",
-      //   year: "numeric",
-      //   month: "numeric",
-      //   day: "numeric",
-      // });
-      // if (day !== "3/9/2025") {
-      // console.log(day);
-      // return;
-      // }
 
       // if (item.pagepath.indexOf("/game/") < 0) {
       //   return;

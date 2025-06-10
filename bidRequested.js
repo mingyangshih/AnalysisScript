@@ -3,21 +3,18 @@ var _ = require("lodash");
 const xlsx = require("xlsx");
 const csv = require("csv-parser");
 // let file = "./hidden/hiddenobjectgames.com_02-03_outstream.csv";
-let file = "./FG/FG_03-19_case1_12_outstream.csv";
+let file =
+  "./bubbleshooter.net/bubbleshooter.net_06-07_bidResponse_bidRequested_Case3_0-8.csv";
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
 let reportResult = [];
 let bidRequestTimes = {};
 let total = {};
-let cd36 = {};
+let floorSum = {};
 fs.createReadStream(file)
   .pipe(csv())
   .on("data", (data) => {
-    if (
-      data.action == "bidRequested" &&
-      data.label.indexOf("outstream") > -1
-      // data.cd1 === "pulsepoint_v"
-    ) {
+    if (data.label.indexOf("outstream") > -1 && data.cd3 === "3") {
       reportResult.push(data);
     }
   }) //Domain
@@ -33,14 +30,16 @@ fs.createReadStream(file)
         month: "numeric",
         day: "numeric",
       });
-      if (day !== "3/19/2025") {
+      if (day !== "7/19/2025") {
         console.log(day);
         return;
       }
       createVariantObject(total, `${item.cd3}`, 0);
+      createVariantObject(floorSum, `${item.cd3}`, 0);
       createVariantObject(bidRequestTimes, `${item.cd3}`, {});
       createVariantObject(cd36, `${item.cd3}`, {});
       total[`${item.cd3}`] += 1;
+      floorSum[`${item.cd3}`] += +item.cd36;
       if (!bidRequestTimes[`${item.cd3}`][item.label]) {
         bidRequestTimes[`${item.cd3}`][item.label] = 1;
       } else {
@@ -80,4 +79,5 @@ fs.createReadStream(file)
     console.log(file);
     console.table(total);
     console.table(bidRequestTimes);
+    console.table(floorSum);
   });

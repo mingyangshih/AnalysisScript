@@ -108,6 +108,83 @@ function processData(reportResult, fileName = "test") {
     }))
     .value();
 
+  // 在 pageUniqueUsers 後面加入新的計算
+  const pageSessions = _.chain(game)
+    .groupBy(
+      (item) =>
+        `${item.uuid}_${item.sessionid}_${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
+    .map((events) => {
+      const pagepath = events[0].pagepath;
+      const uuid = events[0].uuid;
+      const sessionid = events[0].sessionid;
+      const country = events[0].country;
+      const devicecategory = events[0].devicecategory;
+      let revenue = {
+        "1min": 0,
+        "5min": 0,
+        "10min": 0,
+        "20min": 0,
+        "30min": 0,
+        "40min": 0,
+        "50min": 0,
+        "60min": 0,
+      };
+
+      const minTs = _.minBy(events, (item) => Number(item.ts))?.ts;
+      const maxTs = _.maxBy(events, (item) => Number(item.ts))?.ts;
+      const totalTimeSpentMinutes =
+        (Number(maxTs) - Number(minTs)) / (1000 * 60);
+
+      if (totalTimeSpentMinutes >= 1) {
+        events.forEach((event) => {
+          const cm12Minutes = (Number(event.cm12) || 0) / 60;
+          const eventValue = Number(event.value) || 0;
+
+          if (totalTimeSpentMinutes > 1 && cm12Minutes <= 1)
+            revenue["1min"] += eventValue;
+          if (totalTimeSpentMinutes > 5 && cm12Minutes <= 5)
+            revenue["5min"] += eventValue;
+          if (totalTimeSpentMinutes > 10 && cm12Minutes <= 10)
+            revenue["10min"] += eventValue;
+          if (totalTimeSpentMinutes > 20 && cm12Minutes <= 20)
+            revenue["20min"] += eventValue;
+          if (totalTimeSpentMinutes > 30 && cm12Minutes <= 30)
+            revenue["30min"] += eventValue;
+          if (totalTimeSpentMinutes > 40 && cm12Minutes <= 40)
+            revenue["40min"] += eventValue;
+          if (totalTimeSpentMinutes > 50 && cm12Minutes <= 50)
+            revenue["50min"] += eventValue;
+          if (totalTimeSpentMinutes > 60 && cm12Minutes <= 60)
+            revenue["60min"] += eventValue;
+        });
+      }
+
+      return {
+        uuid,
+        sessionid,
+        pagepath,
+        country,
+        devicecategory,
+        revenue,
+      };
+    })
+    .groupBy(
+      (item) => `${item.pagepath}_${item.country}_${item.devicecategory}`
+    )
+    .mapValues((sessions) => ({
+      totalSessions: sessions.length,
+      sessions_1min: _.filter(sessions, (s) => s.revenue["1min"] > 0).length,
+      sessions_5min: _.filter(sessions, (s) => s.revenue["5min"] > 0).length,
+      sessions_10min: _.filter(sessions, (s) => s.revenue["10min"] > 0).length,
+      sessions_20min: _.filter(sessions, (s) => s.revenue["20min"] > 0).length,
+      sessions_30min: _.filter(sessions, (s) => s.revenue["30min"] > 0).length,
+      sessions_40min: _.filter(sessions, (s) => s.revenue["40min"] > 0).length,
+      sessions_50min: _.filter(sessions, (s) => s.revenue["50min"] > 0).length,
+      sessions_60min: _.filter(sessions, (s) => s.revenue["60min"] > 0).length,
+    }))
+    .value();
+
   const TOTAL_VALUE = 23543946;
   const DFP_REVENUE = 333.683;
 
@@ -216,6 +293,7 @@ function processData(reportResult, fileName = "test") {
         avgTimeSpent:
           Math.round(_.meanBy(users, "timeSpentMinutes") * 100) / 100,
         ...pageUniqueUsers[key],
+        ...pageSessions[key], // 加入 sessions 數據
         // 對每個 revenue 值套用公式並保留兩位小數
         revenue_1min: Number(
           ((rawRevenues.revenue_1min / TOTAL_VALUE) * DFP_REVENUE).toFixed(2)
@@ -249,40 +327,40 @@ function processData(reportResult, fileName = "test") {
   const gameCsvOutput = gameRevenueReport.map(
     (stat) =>
       `${stat.pagepath},${stat.country},${stat.devicecategory},` +
-      `${stat.totalUniqueUsers},${stat.totalEvents},${stat.avgTimeSpent},` +
+      `${stat.totalUniqueUsers},${stat.totalSessions},${stat.totalEvents},${stat.avgTimeSpent},` +
       // 1min
-      `${stat.users_1min},${stat.revenue_1min},` +
+      `${stat.users_1min},${stat.sessions_1min},${stat.revenue_1min},` +
       // 5min
-      `${stat.users_5min},${stat.revenue_5min},` +
+      `${stat.users_5min},${stat.sessions_5min},${stat.revenue_5min},` +
       // 10min
-      `${stat.users_10min},${stat.revenue_10min},` +
+      `${stat.users_10min},${stat.sessions_10min},${stat.revenue_10min},` +
       // 20min
-      `${stat.users_20min},${stat.revenue_20min},` +
+      `${stat.users_20min},${stat.sessions_20min},${stat.revenue_20min},` +
       // 30min
-      `${stat.users_30min},${stat.revenue_30min},` +
+      `${stat.users_30min},${stat.sessions_30min},${stat.revenue_30min},` +
       // 40min
-      `${stat.users_40min},${stat.revenue_40min},` +
+      `${stat.users_40min},${stat.sessions_40min},${stat.revenue_40min},` +
       // 50min
-      `${stat.users_50min},${stat.revenue_50min},` +
+      `${stat.users_50min},${stat.sessions_50min},${stat.revenue_50min},` +
       // 60min
-      `${stat.users_60min},${stat.revenue_60min}`
+      `${stat.users_60min},${stat.sessions_60min},${stat.revenue_60min}`
   );
 
   gameCsvOutput.unshift(
     "pagepath,country,devicecategory," +
-      "totalUniqueUsers,totalEvents,avgTimeSpent," +
-      "users_1min,revenue_1min," +
-      "users_5min,revenue_5min," +
-      "users_10min,revenue_10min," +
-      "users_20min,revenue_20min," +
-      "users_30min,revenue_30min," +
-      "users_40min,revenue_40min," +
-      "users_50min,revenue_50min," +
-      "users_60min,revenue_60min"
+      "totalUniqueUsers,totalSessions,totalEvents,avgTimeSpent," +
+      "users_1min,sessions_1min,revenue_1min," +
+      "users_5min,sessions_5min,revenue_5min," +
+      "users_10min,sessions_10min,revenue_10min," +
+      "users_20min,sessions_20min,revenue_20min," +
+      "users_30min,sessions_30min,revenue_30min," +
+      "users_40min,sessions_40min,revenue_40min," +
+      "users_50min,sessions_50min,revenue_50min," +
+      "users_60min,sessions_60min,revenue_60min"
   );
 
   fs.writeFileSync(
-    `./iwin/iwin_03-01_report_country_device_revenue.csv`,
+    `./iwin/iwin_03-01_report_country_device_revenue_session.csv`,
     gameCsvOutput.join("\n")
   );
 }
