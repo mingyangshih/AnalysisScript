@@ -6,13 +6,12 @@ var _ = require("lodash");
 
 // MongoDB 連接 URL
 const url = "mongodb://35.94.152.36:27017"; // Performance Tracker
-const debugUrl = "mongodb://54.189.105.156:27017"; //Debug Tracker
+const debugUrl = "mongodb://54.189.105.156:27017/"; //Debug Tracker
 const dbName = "data-collection";
-const domainId = 120;
+const domainId = 57;
 const collectionName = `pageview${domainId}`;
 
 async function exportData() {
-  // _.forEach(July_1_to_July_15, async (value, index) => {
   const client = new MongoClient(debugUrl);
   try {
     await client.connect();
@@ -21,101 +20,90 @@ async function exportData() {
     const db = client.db(dbName);
     const collection = db.collection(collectionName);
 
-    // pv
-    const matchCondition = [
-      {
-        $match: {
-          ts: {
-            $gte: 1737435600000,
-            $lte: 1737522000000, // 1738040400000
-          },
-          label: "desktop-outstream",
-          // label: "desktop-medrec-template",
-          // category: {
-          //   $regex: "^Duration$",
-          // },
-          action: {
-            $regex:
-              // "^beforeSlotRequest$|^onVideoStarted$|bidResponse|slotRenderEnded|bidRequested",
-              // "^beforeSlotRequest$|bidResponse|slotRenderEnded|bidRequested",
-              "bidResponse|bidRequested",
-            // "pageview",
-          },
-          cd3: {
-            // $regex: "71|72|73|74|75|76", //card game
-            // $regex: "23|24|25|26|27|28", classic game
-            // $regex: "87|88|89|90|91|92", //action
-            $regex: "22|23|24|25|26|27|28", // hidden
-          },
-        },
-      },
-      {
-        $lookup: {
-          from: `user_info${domainId}`,
-          as: "user",
-          localField: "user_info_id",
-          foreignField: "_id",
-        },
-      },
-      {
-        $replaceRoot: {
-          newRoot: {
-            $mergeObjects: [
-              "$$ROOT",
-              {
-                $arrayElemAt: ["$user", 0],
-              },
-            ],
-          },
-        },
-      },
-      {
-        $project: {
-          label: "$label",
-          ts: "$ts",
-          category: "$category",
-          action: "$action",
-          value: "$value",
-          uuid: "$uuid",
-          sessionid: "$sessionid",
-          bs: "$bs",
-          pagepath: "$pagepath",
-          hostname: "$hostname",
-          country: "$country",
-          cd1: "$cd1",
-          cd2: "$cd2",
-          cd3: "$cd3",
-          cd4: "$cd4",
-          cd5: "$cd5",
-          cd6: "$cd6",
-          cd7: "$cd7",
-          cd26: "$cd26",
-          cd27: "$cd27",
-          cd33: "$cd33",
-          cd36: "$cd36",
-          cd38: "$cd38",
-          cm3: "$cm3",
-          cm5: "$cm5",
-          cm13: "$cm13",
-        },
-      },
-    ];
+    const startTime = 1748545200000; // 起始時間 5/29 19 5/30
+    const oneHour = 3600000; // 一小時的毫秒數
+    const totalHours = 9; // 總共要查詢的小時數
 
-    // query data
-    const data = await collection.aggregate(matchCondition).toArray();
-    console.log(data.length);
+    for (let i = 0; i < totalHours; i++) {
+      const currentStartTime = startTime + i * oneHour;
+      const currentEndTime = currentStartTime + oneHour;
 
-    const json2csvParser = new Parser();
-    const csv = json2csvParser.parse(data);
-    // save file
-    fs.writeFileSync(`hidden/${data[0].cd7}_01-21_outstream.csv`, csv);
-    console.log(`Done: ${data[0].cd7}_01-21_outstream.csv`);
+      const matchCondition = [
+        {
+          $match: {
+            ts: {
+              $gte: currentStartTime,
+              $lte: currentEndTime,
+            },
+            label: "desktop-outstream",
+            action: {
+              $regex: "^onVideoStarted$",
+            },
+            cd3: {
+              $in: ["3"],
+            },
+          },
+        },
+        {
+          $project: {
+            label: "$label",
+            ts: "$ts",
+            category: "$category",
+            action: "$action",
+            value: "$value",
+            uuid: "$uuid",
+            sessionid: "$sessionid",
+            bs: "$bs",
+            pagepath: "$pagepath",
+            hostname: "$hostname",
+            country: "$country",
+            cd1: "$cd1",
+            cd2: "$cd2",
+            cd3: "$cd3",
+            cd4: "$cd4",
+            cd5: "$cd5",
+            cd6: "$cd6",
+            cd7: "$cd7",
+            cd24: "$cd24",
+            cd26: "$cd26",
+            cd27: "$cd27",
+            cd33: "$cd33",
+            cd36: "$cd36",
+            cd38: "$cd38",
+            cd40: "$cd40",
+            cm3: "$cm3",
+            cm5: "$cm5",
+            cm13: "$cm13",
+          },
+        },
+      ];
+
+      // query data
+      const data = await collection
+        .aggregate(matchCondition, {
+          maxTimeMS: 600000,
+          allowDiskUse: true, // 允許使用磁盤進行排序
+        })
+        .toArray();
+
+      if (data.length > 0) {
+        console.log(`\nFound ${data.length} records for hour ${i + 1}`);
+        const json2csvParser = new Parser();
+        const csv = json2csvParser.parse(data);
+        const fileName = `bubbleshooter.net/onVideoStarted/hour_${
+          i + 1
+        }_data.csv`;
+        fs.writeFileSync(fileName, csv);
+        console.log(`Saved to: ${fileName}`);
+      } else {
+        console.log(`\nNo data found for hour ${i + 1}`);
+      }
+    }
   } catch (err) {
     console.error("Error exporting data:", err);
   } finally {
     await client.close();
   }
-  // });
 }
 
 exportData();

@@ -2,7 +2,7 @@ const fs = require("fs");
 var _ = require("lodash");
 const csv = require("csv-parser");
 let file =
-  "./bubbleshooter.net/bubbleshooter.net_06-07_bidResponse_bidRequested_Case3_16-24.csv";
+  "./bubbleshooter.net/bubbleshooter.net_06-07_bidResponse_bidRequested_Case3_0-8.csv";
 let createObject = require("./Utils/createVariantObject");
 let { createVariantObject } = createObject;
 
@@ -102,11 +102,20 @@ const processGroups = () => {
 };
 
 // Main processing
+const startTime = performance.now();
+
 fs.createReadStream(file)
   .pipe(csv())
   .on("data", processChunk)
   .on("end", () => {
     processGroups();
+
+    const endTime = performance.now();
+    console.log(
+      `\nTotal execution time: ${((endTime - startTime) / 1000).toFixed(
+        2
+      )} seconds`
+    );
 
     console.log("\n=== Final Results ===");
     console.log(file);

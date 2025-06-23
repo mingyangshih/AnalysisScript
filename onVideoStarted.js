@@ -1,102 +1,106 @@
 const fs = require("fs");
-const xlsx = require("xlsx");
-let _ = require("lodash");
-let countryGroup = require("./countryGroup");
-let { COUNTRY_GROUP_1, COUNTRY_GROUP_2 } = countryGroup;
 const csv = require("csv-parser");
-let file = "./FG/FG_03-19_case4_12_outstream.csv";
-let datas = [];
-let caseOutstream = {};
-let caseOutstreamGroup = {};
-let caseOutstreamCPM = {};
-let caseBidderGroup = {};
-let caseMaxCPM = {};
+const path = require("path");
+let _ = require("lodash");
+
+// const directory =
+//   "/Users/clayton/YollaWork/AnalysisScript/bubbleshooter.net/onVideoStarted";
+const directory =
+  "/home/ubuntu/YAReport/calScripts/bubbleshooter.net/onVideoStarted";
+
+// 創建統計對象
+const stats = {
+  caseOutstream: {},
+  caseOutstreamCPM: {},
+  caseOutstreamCPM_cd40_4: {},
+  caseOutstreamCPM_cd40_not_4: {},
+};
+let testCPM = 0;
+
 function createVariantObject(object, variant, defaultValue) {
   if (!object[variant]) {
     object[variant] = defaultValue;
   }
 }
-fs.createReadStream(file)
-  .pipe(csv())
-  .on("data", (data) => {
-    if (
-      data.action == "onVideoStarted" &&
-      data.label.indexOf("outstream") > -1
-    ) {
-      datas.push(data);
-    }
-  })
-  .on("end", () => {
-    let sorted = _.sortBy(datas, ["cd3"]);
-    _.forEach(sorted, (item) => {
-      if (item.action !== "onVideoStarted") {
-        return;
-      }
-      if (item.label.indexOf("outstream") === -1) {
-        return;
-      }
-      // if (item.pagepath.indexOf("/game/") < 0) {
-      //   return;
-      // }
 
-      // let day = new Date(new Number(item["ts"])).toLocaleString("en-US", {
-      //   timeZone: "America/New_York",
-      //   year: "numeric",
-      //   month: "numeric",
-      //   day: "numeric",
-      // });
-      // if (day !== "3/9/2025") {
-      // console.log(day);
-      // return;
-      // }
+// 格式化數字：除以1000並保留兩位小數
+function formatNumber(num) {
+  return (num / 1000).toFixed(2);
+}
 
-      let countryGroup = "OTHERS";
-      let { country } = item;
-      if (COUNTRY_GROUP_1.indexOf(country) > -1) {
-        countryGroup = "COUNTRY_GROUP_1";
-      } else if (COUNTRY_GROUP_2.indexOf(country) > -1 || country === "US") {
-        countryGroup = "COUNTRY_GROUP_2 + US";
-      }
-      caseBidderGroup;
-      createVariantObject(caseBidderGroup, item.cd3, {});
-      createVariantObject(caseOutstreamGroup, item.cd3, {});
-      createVariantObject(caseMaxCPM, `Case${item.cd3}`, 0);
-      // createVariantObject(caseOutstreamCPM, `Case${item.cd3}`, {
-      //   CPM: 0,
-      //   "Outstream Revenue": 0,
-      // });
-      createVariantObject(caseOutstreamCPM, `Case${item.cd3}`, 0);
-      createVariantObject(caseOutstream, `Case${item.cd3}`, 0);
-      // if (item.cd5 === "Outstream_HYB") {
-      caseOutstream[`Case${item.cd3}`] += 1;
-      // }
+// 讀取目錄中的所有文件
+fs.readdir(directory, (err, files) => {
+  if (err) {
+    console.error("Error reading directory:", err);
+    return;
+  }
 
-      caseOutstreamCPM[`Case${item.cd3}`] += +item.cd2;
-      // caseOutstreamCPM[`Case${item.cd3}`]["Outstream Revenue"] =
-      //   caseOutstreamCPM[`Case${item.cd3}`]["CPM"] / 1000;
-      if (item.cm5 > caseMaxCPM[`Case${item.cd3}`]) {
-        caseMaxCPM[`Case${item.cd3}`] = item.cd2;
-      }
+  // 過濾出 CSV 文件
+  const csvFiles = files.filter((file) => file.endsWith(".csv"));
 
-      if (!caseOutstreamGroup[item.cd3][countryGroup]) {
-        caseOutstreamGroup[item.cd3][countryGroup] = 1;
-      } else {
-        caseOutstreamGroup[item.cd3][countryGroup] += 1;
-      }
-      if (!caseBidderGroup[item.cd3][item.cd1]) {
-        caseBidderGroup[item.cd3][item.cd1] = 1;
-      } else {
-        caseBidderGroup[item.cd3][item.cd1] += 1;
-      }
-    });
+  // 處理每個文件
+  let processedFiles = 0;
+  csvFiles.forEach((file) => {
+    const filePath = path.join(directory, file);
+    console.log(`Processing file: ${file}`);
 
-    console.table(caseOutstream);
-    console.table(caseOutstreamCPM);
-    Object.keys(caseOutstream).forEach((variant) => {
-      console.log(
-        `${variant} Avg. CPM: ${
-          caseOutstreamCPM[variant] / caseOutstream[variant]
-        }`
-      );
-    });
+    fs.createReadStream(filePath)
+      .pipe(csv())
+      .on("data", (data) => {
+        if (
+          data.action == "onVideoStarted" &&
+          data.label.indexOf("outstream") > -1
+        ) {
+          const caseKey = `Case${data.cd3}`;
+
+          // 初始化統計對象
+          createVariantObject(stats.caseOutstream, caseKey, 0);
+          createVariantObject(stats.caseOutstreamCPM, caseKey, 0);
+          createVariantObject(stats.caseOutstreamCPM_cd40_4, caseKey, 0);
+          createVariantObject(stats.caseOutstreamCPM_cd40_not_4, caseKey, 0);
+
+          // 更新統計
+          stats.caseOutstream[caseKey] += 1;
+          stats.caseOutstreamCPM[caseKey] += +data.cd2;
+
+          // 根據 cd40 分類累加 cd2
+          if (data.cd40 === "4") {
+            stats.caseOutstreamCPM_cd40_4[caseKey] += +data.cd2;
+            testCPM += +data.cd2;
+          } else {
+            stats.caseOutstreamCPM_cd40_not_4[caseKey] += +data.cd2;
+          }
+        }
+      })
+      .on("end", () => {
+        processedFiles++;
+        if (processedFiles === csvFiles.length) {
+          // 創建整合的表格數據
+          const combinedTable = {};
+
+          Object.keys(stats.caseOutstream).forEach((variant) => {
+            const count = stats.caseOutstream[variant];
+            const totalCPM = stats.caseOutstreamCPM[variant];
+            const cpm_cd40_4 = stats.caseOutstreamCPM_cd40_4[variant];
+            const cpm_cd40_not_4 = stats.caseOutstreamCPM_cd40_not_4[variant];
+
+            combinedTable[variant] = {
+              Count: count,
+              "Total CPM (K)": formatNumber(totalCPM),
+              "Avg CPM (K)": formatNumber(totalCPM / count),
+              "CPM cd40=4 (K)": formatNumber(cpm_cd40_4),
+              "Avg CPM cd40=4 (K)": formatNumber(cpm_cd40_4 / count),
+              "CPM cd40!=4 (K)": formatNumber(cpm_cd40_not_4),
+              "Avg CPM cd40!=4 (K)": formatNumber(cpm_cd40_not_4 / count),
+            };
+          });
+
+          console.log("\n=== Combined Statistics ===");
+          console.table(combinedTable);
+        }
+      })
+      .on("error", (error) => {
+        console.error(`Error processing file ${file}:`, error);
+      });
   });
+});
