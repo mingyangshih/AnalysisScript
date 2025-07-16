@@ -1,3 +1,21 @@
 node_modules
 *.csv
 *.zip
+*.png
+
+# Python virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+env.bak/
+venv.bak/
+python_script/mongodb_env/
+**/site-packages/
+**/lib/python*/
+**/bin/
+**/include/
+**/Scripts/
+**/Lib/
+**/pyvenv.cfg
