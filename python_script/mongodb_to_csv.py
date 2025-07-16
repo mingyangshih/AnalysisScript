@@ -6,19 +6,19 @@ import os
 # MongoDB connection settings
 # 34.217.61.62 perfomance tracker
 # 54.189.105.156 debug tracker
-MONGODB_URL = "mongodb://34.217.61.62:27017/" 
+MONGODB_URL = "mongodb://54.189.105.156:27017/" 
 DB_NAME = "data-collection"
-DOMAIN_ID = 276
+DOMAIN_ID = 275
 COLLECTION_NAME = f"pageview{DOMAIN_ID}"
 
 # Time settings
-START_TIME = 1750132800000  # Starting timestamp 0617
+START_TIME = 1752379200000  # Starting timestamp 0713
 ONE_HOUR_MS = 3600000  # One hour in milliseconds
 TOTAL_HOURS = 24
-EVENT = "Duration"
+EVENT = "bidResponse"
 
 # Output directory
-OUTPUT_DIR = f"sudoku/{EVENT}"
+OUTPUT_DIR = f"solitairex/{EVENT}"
 
 def export_data():
     # Create output directory if it doesn't exist
@@ -44,11 +44,13 @@ def export_data():
                             "$gte": current_start_time,
                             "$lte": current_end_time
                         },
-                        "category": {
+                        "label": {
+                            "$regex": "outstream"
+                        },
+                        "action": {
                             "$regex": f"^{EVENT}$"
                         },
-                        # "cd3": {"$in": ["5","6","7","8"]}
-                        "cd3": {"$in": ["7","8","9","10"]}
+                        "cd3": {"$in": ["22","23"]}
                     }
                 },
                 {
@@ -91,17 +93,22 @@ def export_data():
                         "cd5": "$cd5",
                         "cd6": "$cd6",
                         "cd7": "$cd7",
-                        "cd15": "$cd15",
-                        "cd16": "$cd16",
+                        "cd12": "$cd12",
+                        "cd19": "$cd19",
                         "cd24": "$cd24",
                         "cd26": "$cd26",
                         "cd27": "$cd27",
                         "cd33": "$cd33",
+                        "cd34": "$cd34",
                         "cd36": "$cd36",
+                        "cd37": "$cd37",
                         "cd38": "$cd38",
+                        "cd39": "$cd39",
                         "cd40": "$cd40",
+                        "cd41": "$cd41",
                         "cm3": "$cm3",
                         "cm5": "$cm5",
+                        "cm7": "$cm7",
                         "cm13": "$cm13",
                         "country": "$country",
                         "browsersize": "$browsersize",
